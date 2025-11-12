@@ -1,0 +1,20 @@
+{
+  "name": "web-test-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + TypeScript E2E tests for eNotes cart task",
+  "scripts": {
+    "test:ui": "npx playwright test",
+    "report:generate": "allure generate allure-results --clean",
+    "report:open": "allure open",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.6.3",
+    "allure-playwright": "^2.15.1",
+    "allure-commandline": "^2.29.0"
+  }
+}
