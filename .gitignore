@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Storage state (contains auth tokens)
+storage/
+
+# Allure
+allure-results/
+allure-report/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build
+dist/
+build/
