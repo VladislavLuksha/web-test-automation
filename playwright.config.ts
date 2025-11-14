@@ -4,10 +4,10 @@ export default defineConfig({
   testDir: './tests/ui',
   timeout: 30000,
   expect: { timeout: 10000 },
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: 1,
   reporter: [['list'], ['allure-playwright'], ['html']],
   outputDir: 'test-results/',
   use: {

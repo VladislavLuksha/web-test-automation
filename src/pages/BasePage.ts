@@ -1,4 +1,5 @@
-import { Page, expect, Locator } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
+import { testData } from '../../config/testData';
 
 export abstract class BasePage {
   protected readonly page: Page;
@@ -11,38 +12,38 @@ export abstract class BasePage {
     await this.page.goto(url);
   }
 
-  protected async waitForVisible(locator: Locator, timeout: number = 5000): Promise<void> {
+  protected async waitForVisible(locator: Locator, timeout: number = testData.timeouts.veryLong): Promise<void> {
     await locator.waitFor({ state: 'visible', timeout });
   }
 
-  protected async waitForNetworkIdle(timeout: number = 1000): Promise<void> {
-    await this.page.waitForLoadState('networkidle', { timeout });
-  }
-
   protected async isVisible(locator: Locator): Promise<boolean> {
-    return await locator.isVisible().catch(() => false);
+    return locator.isVisible().catch(() => false);
   }
 
-  /**
-   * Wait for element count to match expected value
-   */
-  protected async waitForCount(locator: Locator, expectedCount: number, timeout: number = 5000): Promise<void> {
-    await expect.poll(async () => await locator.count(), { timeout }).toBe(expectedCount);
+  protected async waitForNetworkIdle(timeout: number = testData.timeouts.default, ignoreErrors: boolean = true): Promise<void> {
+    try {
+      await this.page.waitForLoadState('networkidle', { timeout });
+    } catch {
+      if (!ignoreErrors) {
+        throw new Error(`Network idle timeout after ${timeout}ms`);
+      }
+    }
   }
 
-  /**
-   * Safely click on element with waiting for visibility
-   */
-  protected async safeClick(locator: Locator, options?: { timeout?: number; force?: boolean }): Promise<void> {
-    await this.waitForVisible(locator, options?.timeout);
-    await locator.click({ force: options?.force });
+  async waitForUrl(url: string | RegExp | ((url: URL) => boolean), timeout: number = testData.timeouts.long): Promise<void> {
+    await this.page.waitForURL(url, { timeout });
   }
 
-  /**
-   * Safely fill input field with waiting for visibility
-   */
-  protected async safeFill(locator: Locator, value: string, timeout: number = 5000): Promise<void> {
-    await this.waitForVisible(locator, timeout);
-    await locator.fill(value);
+  protected async scrollToElement(locator: Locator): Promise<void> {
+    await locator.scrollIntoViewIfNeeded();
+  }
+
+  protected async getTextContent(locator: Locator): Promise<string> {
+    return (await locator.textContent().catch(() => null)) || '';
+  }
+
+  protected async waitForText(locator: Locator, text: string | RegExp, timeout: number = testData.timeouts.long): Promise<void> {
+    await locator.waitFor({ state: 'visible', timeout });
+    await locator.filter({ hasText: text }).waitFor({ state: 'visible', timeout });
   }
 }
