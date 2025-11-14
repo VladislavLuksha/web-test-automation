@@ -6,47 +6,74 @@ export class CartPopup extends BasePage {
   readonly goToCartButton: Locator;
   readonly items: Locator;
   readonly totalPrice: Locator;
+  readonly clearCartButton: Locator;
 
   constructor(page: Page) {
     super(page);
-
-    this.goToCartButton = this.page.getByRole('button', { name: /перейти в корзину/i });
-    this.items = this.page.locator('ul').locator('li').filter({ hasText: /р\./ });
-    this.totalPrice = this.page.locator('text=/Итого/i');
+    
+    this.goToCartButton = this.page.locator('a[href="/basket"]').filter({ hasText: /перейти в корзину/i });
+    this.items = this.page.locator('.basket-item');
+    this.totalPrice = this.page.getByText(/итого.*к оплате/i);
+    this.clearCartButton = this.page.getByRole('button', { name: /очистить.*корзин/i });
   }
 
   async expectOpened(): Promise<void> {
-    await Promise.race([
-      this.waitForVisible(this.goToCartButton, testData.timeouts.long).catch(() => {}),
-      this.waitForVisible(this.totalPrice.first(), testData.timeouts.long).catch(() => {}),
-      this.waitForVisible(this.items.first(), testData.timeouts.long).catch(() => {})
-    ]);
+    await this.waitForVisible(this.page.locator('#basketContainer'), testData.timeouts.long);
+    await expect(this.goToCartButton).toBeVisible({ timeout: testData.timeouts.long });
   }
 
   async verifyContent(): Promise<void> {
-    await this.waitForNetworkIdle(testData.timeouts.medium);
-    
-    // Verify popup is open (at least one indicator should be visible)
-    const buttonVisible = await this.isVisible(this.goToCartButton);
-    const totalVisible = await this.isVisible(this.totalPrice.first());
     const itemsCount = await this.items.count();
     
-    // At least one should be visible (popup is open)
-    expect(buttonVisible || totalVisible || itemsCount > 0).toBeTruthy();
-    
-    // If items found, verify they have price and name
     if (itemsCount > 0) {
-      const firstItem = this.items.first();
-      const itemText = await firstItem.textContent();
-      expect(itemText).toBeTruthy();
+      for (let i = 0; i < itemsCount; i++) {
+        const item = this.items.nth(i);
+        const itemTitle = item.locator('.basket-item-title');
+        const itemPrice = item.locator('.basket-item-price');
+        
+        await this.expectValidTitle(itemTitle);
+        await this.expectValidPrice(itemPrice);
+      }
       
-      // Verify price pattern (requirement: "цена")
-      expect(itemText).toMatch(/\d+.*р\./);
-      
-      // Verify product name exists (requirement: "наименование товара")
-      // Item text should not be just a price (should contain product name)
-      const hasProductName = !/^\d+.*р\.\d*$/.test(itemText?.trim() || '');
-      expect(hasProductName).toBeTruthy();
+      await expect(this.totalPrice).toBeVisible();
+      const totalText = await this.getTextContent(this.totalPrice);
+      expect(totalText).toMatch(/итого.*\d+/i);
     }
+  }
+
+  async expectItemsCount(expectedCount: number): Promise<void> {
+    await expect.poll(
+      () => this.getItemsCount(),
+      { timeout: testData.timeouts.long }
+    ).toBe(expectedCount);
+  }
+
+  async expectValidPrice(locator: Locator): Promise<void> {
+    const priceText = await this.getTextContent(locator);
+    expect(priceText.trim()).toBeTruthy();
+    expect(priceText).toMatch(/\d+[\s\S]*?р\.?/i);
+  }
+
+  async expectValidTitle(locator: Locator): Promise<void> {
+    const titleText = await this.getTextContent(locator);
+    expect(titleText.trim()).toBeTruthy();
+  }
+
+  async getItemsCount(): Promise<number> {
+    return this.items.count();
+  }
+
+  async goToCart(): Promise<void> {
+    await this.goToCartButton.click();
+    await this.waitForUrl(/\/basket/, testData.timeouts.long);
+  }
+
+  async clearCart(): Promise<void> {
+    if (await this.getItemsCount() === 0) {
+      return;
+    }
+
+    await this.clearCartButton.click();
+    await this.expectItemsCount(0);
   }
 }

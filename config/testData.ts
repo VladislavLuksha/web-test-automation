@@ -5,11 +5,9 @@ export const testData = {
   },
   urls: {
     login: '/login',
-    home: '/',
-    cart: '/basket'
+    home: '/'
   },
   cart: {
-    emptyCount: 0,
     singleItemCount: 1,
     multipleItemsCount: 9
   },
